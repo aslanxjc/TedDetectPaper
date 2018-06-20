@@ -1,0 +1,264 @@
+#-*-coding:utf-8 -*-
+import os
+import sys
+import cv2
+import collections
+
+sys.path.append('.')
+
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE","ss_mark.settings")
+
+from ss_mark.models import Paper as ssPaper,PaperPieces
+from django.db.models import Q
+from utils.DetectPaper.new_detect_image import Paper,AnsDetect
+from utils.DetectPaper.rec_ans_area import RecAnsArea
+
+def mylog(**kargs):
+    '''
+    格式化打印数据
+    '''
+    k = kargs.keys()[0]
+    from pprint import pprint
+    print '\n\n-----------------------beigin----------------'
+    #pprint '{}s:{}'.format((k,kargs.get(k)))
+    pprint('{}:'.format(k))
+    pprint(kargs.get(k))
+    print '----------------------end--------------------\n\n'
+
+def get_ans_area(img_path=None,std_point={"y": 170, "x": 257, "w": 26, "h": 36}):
+    '''
+    从试卷中分离出答题卡
+    '''
+    recans_obj = RecAnsArea(img_path)
+    ans_path = recans_obj.get_ans_path()
+
+    return ans_path
+
+
+def get_std_xy(ans_img_path=None,std_point=None):
+    '''
+    识别标准填图
+    '''
+    ansdetect = AnsDetect(ans_img_path)
+
+    #考号区域标准信息提取
+
+    #腐蚀核计算方法std_w/2,std_h/3,链接核计算方法std_w/6,std_h/6
+    std_w = std_point.get('w')
+    std_h = std_point.get('h')
+    
+    #腐蚀核大小
+    edsize = cv2.getStructuringElement(cv2.MORPH_RECT,(std_w/2,std_h/3))
+
+    dilsize = cv2.getStructuringElement(cv2.MORPH_RECT,(std_w/2,std_h/3))
+
+    dilsize_join = cv2.getStructuringElement(cv2.MORPH_CROSS,(std_h/8,std_h/8))
+    #dilsize_join = cv2.getStructuringElement(cv2.MORPH_CROSS,(std_h/100,std_h/100))
+
+    x_rate,y_rate = ansdetect.recStdXY(edsize,dilsize,dilsize_join)
+
+    x_rate.sort()
+    y_rate.sort()
+
+    return x_rate,y_rate
+
+
+
+def rec_kaohao_str(ans_img_path=None,std_point=None,ans_th_rate=None):
+    '''
+    从答题卡识别出考号
+    '''
+    print ans_img_path,33333333333333333
+    ansdetect = AnsDetect(ans_img_path)
+
+    #考号区域标准信息提取
+    kh_std_dct = ansdetect.findKaoHaoCnts(std_point,ans_th_rate)
+
+    mylog(kh_std_dct=kh_std_dct)
+
+    #腐蚀核计算方法std_w/2,std_h/3,链接核计算方法std_w/6,std_h/6
+    std_w = std_point.get('w')
+    std_h = std_point.get('h')
+    
+    print std_w,std_h,66666666666666666666666666666666
+    #腐蚀核大小
+    print int(std_w/2),444444444444444444
+    print int(std_h/3),444444444444444444
+    edsize = cv2.getStructuringElement(cv2.MORPH_RECT,(std_w/2,std_h/3))
+    edsize = cv2.getStructuringElement(cv2.MORPH_RECT,(std_w/3,std_h/3))
+
+    dilsize = cv2.getStructuringElement(cv2.MORPH_RECT,(std_w/2,std_h/4))
+
+    dilsize_join = cv2.getStructuringElement(cv2.MORPH_CROSS,(std_w/8,std_w/8))
+    dilsize_join = cv2.getStructuringElement(cv2.MORPH_CROSS,(std_w/6,std_w/6))
+    dilsize_join = cv2.getStructuringElement(cv2.MORPH_CROSS,(2,3))
+
+    if kh_std_dct:
+
+        #识别考号
+        kh_str = ansdetect.recKaoHao(kh_std_dct,edsize,dilsize,dilsize_join,std_point)
+
+        return kh_str
+
+    return ''
+
+def rec_shit_ans(ans_img_path=None,ans_th_rate=[],ans_xx_rate=[],std_quenos=[],std_point=None):
+    '''
+    从答题卡识别出选择题答案
+    ans_th_rate:题号标准比率
+    ans_xx_rate:选项标准比率
+    std_quenos:选择题题号
+    '''
+    ansdetect = AnsDetect(ans_img_path)
+
+    #考号区域标准信息提取
+    kh_std_dct = ansdetect.findKaoHaoCnts(std_point,ans_th_rate)
+
+    if kh_std_dct:
+
+        #腐蚀核计算方法std_w/2,std_h/3,链接核计算方法std_w/6,std_h/6
+        std_w = std_point.get('w')
+        std_h = std_point.get('h')
+        
+        #腐蚀核大小
+        edsize = cv2.getStructuringElement(cv2.MORPH_RECT,(std_w/2,std_h/3))
+        #edsize = cv2.getStructuringElement(cv2.MORPH_RECT,(std_w/3,std_h/4))
+
+        dilsize = cv2.getStructuringElement(cv2.MORPH_RECT,(std_w/2,std_h/3))
+        #dilsize = cv2.getStructuringElement(cv2.MORPH_RECT,(std_w/3,std_h/4))
+        #dilsize = cv2.getStructuringElement(cv2.MORPH_RECT,(std_w/4,std_h/5))
+
+        dilsize_join = cv2.getStructuringElement(cv2.MORPH_CROSS,(std_h/8,std_h/8))
+        #dilsize_join = cv2.getStructuringElement(cv2.MORPH_CROSS,(std_h/10,std_h/10))
+
+        #识别选择题答案
+        shit_ans_lst = ansdetect.recAns(kh_std_dct,ans_th_rate,ans_xx_rate,std_quenos,edsize,dilsize,dilsize_join,std_point)
+
+        return shit_ans_lst
+    else:
+        return []
+
+def sort_quenos(std_quenos):
+    '''
+    '''
+    new_std_quenos = []
+
+    if std_quenos:
+        std_quenos = sorted(std_quenos,key=lambda x:x['queno'])
+
+        tmp = collections.OrderedDict()
+        for i,_sq in enumerate(std_quenos):
+            queno = _sq.get('queno','0')
+            if not tmp.has_key(queno):
+                tmp[queno] = [_sq]
+            else:
+                tmp[queno].append(_sq)
+
+        for k,v in tmp.items():
+            v = sorted(v,key=lambda x:x['squeno'])
+            new_std_quenos.extend(v)
+
+    return new_std_quenos
+
+def get_kh_ans(img_path,paperno,std_point):
+
+    ans_img_path = get_ans_area(img_path,std_point)
+    #加上std_point处理卷面多个类答题卡框问题
+    #ans_img_path = get_ans_area(img_path)
+
+    pap = ssPaper.objects.filter(paperno=paperno).first()
+    pps = PaperPieces.objects.filter(paperno=paperno).filter(Q(quetype=0)|Q(quetype=1))
+    if pps:
+        #std_quenos = list(pps.values_list('queno',flat=True))
+        #std_quenos = [int(x) for x in std_quenos]
+        #std_quenos.sort()
+        std_quenos = list(pps.values('queno','squeno'))
+        std_quenos = [{'queno':int(x.get('queno')),'squeno':int(x.get('squeno'))} for x in std_quenos]
+        std_quenos = sort_quenos(std_quenos)
+        std_quenos = [(x.get('queno','0'),x.get('squeno','0')) for x in std_quenos]
+        mylog(std_quenos=std_quenos)
+        raise Exception
+    if pap:
+        ans_th_rate = eval(pap.std_ans_point_x)
+        ans_xx_rate = eval(pap.std_ans_point_y)
+
+        #std_point = eval(pap.std_point)[0]
+        std_point = std_point 
+        from utils.DetectPaper.detect_image_std import get_std_point
+        std_point = get_std_point(img_path)
+        print std_point,9999999999999999999999
+        #std_point = {'y': 87, 'x': 118, 'w': 26, 'h': 36}
+
+        kh_str = rec_kaohao_str(ans_img_path,std_point,ans_th_rate)
+
+        shit_ans_lst = rec_shit_ans(ans_img_path,ans_th_rate,ans_xx_rate,std_quenos,std_point)
+        mylog(kh_str=kh_str)
+        mylog(shit_ans_lst=shit_ans_lst)
+	
+	return kh_str,shit_ans_lst
+
+
+def main():
+    '''
+    '''
+
+    img_path = "/mnt/ss_mark_deploy/ss-mark/utils/DetectPaper/test.jpg"
+
+
+    #img_path = "/mnt/ss_mark_deploy/ss-mark/utils/DetectPaper/bz.jpg"
+    #from utils.detect_image_std import get_std_point                                                                                                                               
+    ##from utils.DetectPaper.detect_image_std import get_std_point   
+    ##标准定位坐标点识别                                                 
+    #std_point = get_std_point(img_path)
+    #ans_img_path = get_ans_area(img_path)
+    #std_x_rate_lst,std_y_rate_lst = get_std_xy(ans_img_path,std_point)
+    #mylog(std_x_rate_lst=std_x_rate_lst)
+    #mylog(std_y_rate_lst=std_y_rate_lst)
+
+    paperno = "XZB2018RJYWB03001"
+
+    from utils.DetectPaper.detect_image_std import get_std_point
+
+    ans_img_path = get_ans_area(img_path)
+
+    pap = ssPaper.objects.filter(paperno=paperno).first()
+    pps = PaperPieces.objects.filter(paperno=paperno).filter(Q(quetype=0)|Q(quetype=1))
+    if pps:
+        std_quenos = list(pps.values('queno','squeno'))
+        std_quenos = [{'queno':int(x.get('queno')),'squeno':int(x.get('squeno'))} for x in std_quenos]
+        std_quenos = sort_quenos(std_quenos)
+        std_quenos = [(x.get('queno','0'),x.get('squeno','0')) for x in std_quenos]
+        mylog(std_quenos=std_quenos)
+        raise Exception
+
+    if pap:
+        ans_th_rate = eval(pap.std_ans_point_x)
+        ans_xx_rate = eval(pap.std_ans_point_y)
+        std_point = eval(pap.std_point)[0]
+
+        std_point = get_std_point(img_path)
+
+        kh_str = rec_kaohao_str(ans_img_path,std_point,ans_th_rate)
+
+        shit_ans_lst = rec_shit_ans(ans_img_path,ans_th_rate,ans_xx_rate,std_quenos,std_point)
+
+        mylog(kh_str=kh_str)
+        mylog(shit_ans_lst=shit_ans_lst)
+
+
+def main1():
+    img_path = "/mnt/ss_mark_deploy/ss-mark/utils/DetectPaper/test.jpg"
+    paperno = "XZB2018RJWLB02001"
+
+    from utils.DetectPaper.detect_image_std import get_std_point
+    std_point = get_std_point(img_path)
+    get_kh_ans(img_path,paperno,std_point)
+
+
+
+if __name__ == "__main__": 
+    #main()
+    main1()
+    #path = "/mnt/ss_mark_deploy/ss-mark/utils/DetectPaper/test.jpg"
+    #img_path = get_ans_area(path)
