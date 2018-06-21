@@ -161,7 +161,7 @@ class DetectPaper:
 
         std_point_x_x = std_point_x.get("x")
         print std_point_x_x,777777777777777777
-        std_point_x_l_w = std_point_x.get("w")
+        std_point_x_w = std_point_x.get("w")
         #答题框高度
         ah = self.org_cut_point[2][1]-self.org_cut_point[1][1]
         for _ld in lines_data:
@@ -359,6 +359,7 @@ if __name__ == "__main__":
     quenos = [1,2,3,4,5,6,7,8,9,10,11,12] 
     #quenos = [1,2,3,5,6,8,9,10,11,12,13] 
     quenos = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24] 
+    quenos = [1,2,3,4,5,6] 
 
     dpobj = DetectPaper(img_path,quenos)
     dpobj.rec_all_fill_cnts()
