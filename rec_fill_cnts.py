@@ -7,6 +7,7 @@ from imutils import contours
 from imutils.perspective import four_point_transform
 import os
 import json
+from collections  import OrderedDict
 from PIL import Image,ImageDraw
 
 from detect_image_std import get_std_point
@@ -59,6 +60,68 @@ class CloseImage:
         self.dilate_image_path = close_path
         return self.image
 
+    def rec_kh_std_line(self,path=None):
+        '''
+        直线检测
+        '''
+        lines_data = []
+        minLineLength = self.height/3*2
+        maxLineGap = 100
+        
+        lines = cv2.HoughLinesP(self.thresh,1,np.pi,118,minLineLength,maxLineGap)
+        for line in lines[:,:,:]:
+            _tmp_dct = {}
+            print line[0,:]
+            x2,y2,x1,y1 = line[0,:]
+            #print x1,y1,x2,y2
+            _tmp_dct["x1"] = x1
+            _tmp_dct["y1"] = y1
+            _tmp_dct["x2"] = x2
+            _tmp_dct["y2"] = y2
+            _tmp_dct["h"] = abs(y2-y1)
+            
+            lines_data.append(_tmp_dct)
+
+            cv2.line(self.image,(x1,y1),(x2,y2),(0,255,0),1)
+            #输出答题卡区域图像
+            ans_lst = os.path.splitext(self.image_path)
+            ans_path = ans_lst[0] + '_line' + ans_lst[1]
+            cv2.imwrite(ans_path,self.image)
+
+
+        #考号标准线识别
+        lines_data = sorted(lines_data,key=lambda x:x["x1"])
+
+        return lines_data
+
+        tmp_dct = OrderedDict()
+        for _line in lines_data:
+            x1 = _line.get("x1")
+            y1 = _line.get("y1")
+            x2 = _line.get("x2")
+            y2 = _line.get("y2")
+
+            if not tmp_dct:
+                tmp_dct[x1] = [_line]
+            else:
+                if (x1-tmp_dct.keys()[-1]) < 10:
+                    tmp_dct[tmp_dct.keys()[-1]].append(_line)
+                else:
+                    tmp_dct[x1] = [_line]
+
+        mylog(tmp_dct=dict(tmp_dct))
+        for i,tpl in enumerate(tmp_dct.items()):
+            lines_list = tpl[1]
+            print lines_list,555555555555555555
+            lines_list = sorted(lines_list,key=lambda x:x["h"],reverse=True)
+            #return lines_list
+            if i == 4:
+                return lines_list[0]
+
+        return {}
+
+        return lines_data
+
 
     def closeopration(self,w=18,h=15):  
         #self._dilate()
@@ -98,6 +161,7 @@ class CloseCntsDetect:
         cv2.imwrite(close_path,self.thresh)
 
 
+
     def get_cnts(self,std_point=None):
         """识别出答案轮廓
         """
@@ -133,6 +197,7 @@ def get_ans_area_cnts(inverse_image_path="test_cut_(543, 2219, 1860, 2603)_inver
     h = 48
     #闭操作清除杂质
     image = CloseImage(inverse_image_path)
+    kh_std_line = image.rec_kh_std_line()
     if len(std_quenos) > 20:
         cimage_path = image.closeopration(int(w/2.5),int(h/2.5))
     else:
@@ -142,7 +207,7 @@ def get_ans_area_cnts(inverse_image_path="test_cut_(543, 2219, 1860, 2603)_inver
     cnts = ccimage.get_cnts()
     #mylog(cnts=cnts)
 
-    return cnts
+    return cnts,kh_std_line
 
 
 def main():

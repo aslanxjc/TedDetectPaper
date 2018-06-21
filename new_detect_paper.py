@@ -3,6 +3,7 @@ import os
 import sys
 import cv2
 import collections
+from collections import OrderedDict
 from new_rec_ans_area import RecAnsArea
 from rec_fill_cnts import get_ans_area_cnts
 from new_rec_cnts_filter import CntsFilter
@@ -54,9 +55,11 @@ class DetectPaper:
         """
         """
         self.get_ans_area_path()
-        all_cnts = get_ans_area_cnts(self.inverse_image_path)
+        all_cnts,std_kh_line = get_ans_area_cnts(self.inverse_image_path)
+        #答题框高度
+        #ah = self.org_cut_point[3]-self.org_cut_point[1]
         #mylog(all_cnts=all_cnts)
-        return all_cnts
+        return all_cnts,std_kh_line
 
     def get_roi(self,rec=(1192,347,1237,369)):
         """指定矩形角点提取感兴趣矩形区域
@@ -110,10 +113,108 @@ class DetectPaper:
 
         return roi_points_dct
 
+    
+    def get_kh_roi(self,std_kh_line,rline):
+        """
+        """
+        x1 = std_kh_line.get("x1")
+        y1 = std_kh_line.get("y1")
+        x2 = std_kh_line.get("x2")
+        y2 = std_kh_line.get("y2")
+
+        std_h = abs(y2-y1)/6
+        std_w = abs(rline.get("x1")-std_kh_line.get("x1"))/10
+
+        kh_roi_dct = collections.OrderedDict()
+        mask = np.zeros(self.thresh.shape[0:2],dtype=np.uint8) 
+        for i,_ny in enumerate(range(0,6)):
+            kh_nums = []
+            for j,nx in enumerate(range(0,10)):
+
+                if i>0:
+                    _roi_point = (int(x1+std_w*j+2),int(y1+i*std_h+2),int(x1+(j+1)*std_w*1),int(y1+(i+1)*std_h))
+                else:
+                    _roi_point = (int(x1+std_w*j+2),int(y1+i*std_h),int(x1+(j+1)*std_w*1),int(y1+(i+1)*std_h))
+
+                kh_nums.append(_roi_point)
+
+                cv2.rectangle(mask,(_roi_point[0],_roi_point[1]),
+                    (_roi_point[2],_roi_point[3]),255,-1)
+                mask = cv2.bitwise_and(self.thresh, self.thresh, mask=mask)
+                #cv2.drawContours(mask, [c], -1, 255, -1)
+                #break
+            #break
+            kh_roi_dct[i] = kh_nums
+
+        #输出二值化操作后的图像
+        spt_lst = os.path.splitext(self.inverse_image_path)
+        close_path = spt_lst[0] + '_thresh_mask_kh' + spt_lst[1]
+        cv2.imwrite(close_path,mask)
+
+        return kh_roi_dct
+
+
+    def filter_lines(self,lines_data,std_point_x):
+        """
+        """
+        new_lines_data = []
+        new_lines_data_pre = []
+
+        std_point_x_x = std_point_x.get("x")
+        std_point_x_w = std_point_x.get("w")
+        #答题框高度
+        print self.org_cut_point,6666666666666666666
+        ah = self.org_cut_point[2][1]-self.org_cut_point[1][1]
+        for _ld in lines_data:
+            if _ld.get("h")<ah/6*5:
+                continue
+            new_lines_data_pre.append(_ld)
+            if abs(std_point_x_x-_ld.get("x2"))>std_point_x_w*3:
+                continue
+            new_lines_data.append(_ld)
+
+        #考号标准线识别
+        lines_data = sorted(new_lines_data,key=lambda x:x["x1"])
+
+        tmp_dct = OrderedDict()
+        for _line in lines_data:
+            x1 = _line.get("x1")
+            y1 = _line.get("y1")
+            x2 = _line.get("x2")
+            y2 = _line.get("y2")
+
+            if not tmp_dct:
+                tmp_dct[x1] = [_line]
+            else:
+                if (x1-tmp_dct.keys()[-1]) < 10:
+                    tmp_dct[tmp_dct.keys()[-1]].append(_line)
+                else:
+                    tmp_dct[x1] = [_line]
+
+        mylog(tmp_dct=dict(tmp_dct))
+        for x,_lines in tmp_dct.items():
+            _lines = sorted(_lines,key=lambda x:x["h"],reverse=True)
+            _lines = _lines[0]
+            #return _lines[0]
+
+        #向前寻找标准线
+        new_lines_data_pre = filter(lambda x:x["x1"]<_lines["x1"],new_lines_data_pre)
+        #按x倒序排
+        _std_lines = None
+        new_lines_data_pre = sorted(new_lines_data_pre,key=lambda x:x["x1"],reverse=True)
+        mylog(new_lines_data_pre=new_lines_data_pre)
+        for _l in new_lines_data_pre:
+            if abs(_l.get("h")-_lines["h"]) < std_point_x_w*3\
+                     and abs(_l.get("x1")-_lines["x1"]) > std_point_x_w*10:
+                _std_lines = _l
+                break
+        return _std_lines,_lines
+
+
     def rec_paper(self):
         """
         """
-        all_cnts = self.rec_all_fill_cnts()
+        all_cnts,std_kh_lines = self.rec_all_fill_cnts()
         cntsfilter = CntsFilter(all_cnts,self.quenos,self.org_cut_point)
         self.std_x_points,self.std_y_points,self.kh_points = cntsfilter.sep_std_cnts()
         mylog(std_x_points=self.std_x_points)
@@ -124,6 +225,7 @@ class DetectPaper:
         #答案识别
         #计算roi非0像素点
         std_pixels = self.get_std_pixels(self.std_x_points)
+
         ans_options = {0:"A",1:"B",2:"C",3:"D",4:"E",5:"F",6:"G"}
         ans_result = collections.OrderedDict()
         for i,_rptpl in roi_points_dct.items():
@@ -143,22 +245,47 @@ class DetectPaper:
         std_point_x = self.std_x_points[0].get("x")
         std_point_w = self.std_x_points[0].get("w")
 
+        std_kh_line,rline = self.filter_lines(std_kh_lines,self.std_x_points[0])
+
+        print std_kh_line,rline,888888888888888888888888888
+
         avg_width = self.get_avg_width(kh_points)
         std_kh_x = std_point_x - avg_width*1.5*10
-        print std_kh_x,99999999999999999999999999
-        for _kh in kh_points:
-            _kh_x = _kh.get("x")
-            kh_num = abs(round((_kh_x - std_kh_x)/(1.5*avg_width)))
-            print kh_num
+        kh_result = collections.OrderedDict()
+        if std_kh_line:
+            kh_roi_dct = self.get_kh_roi(std_kh_line,rline)
+            for i,_kr in kh_roi_dct.items():
+                kh = []
+                for j,_rp in enumerate(_kr):
+                    _tmp = {}
+                    mask_roi = self.get_roi(_rp)
+                    total_pixels = cv2.countNonZero(mask_roi)
+                    _tmp["n"] = j
+                    _tmp["v"] = total_pixels
+                    kh.append(_tmp)
+                kh = sorted(kh,key=lambda x:x["v"],reverse=True)
+
+                kh_result[i] = kh[0].get("n")
+            mylog(kh_result=kh_result)
+
+
+        #for _kh in kh_points:
+        #    _kh_x = _kh.get("x")
+        #    print _kh_x - std_kh_x
+        #    print (_kh_x - std_kh_x)/(1.5*avg_width)
+        #    kh_num = abs(int((_kh_x - std_kh_x)/(1.5*avg_width)))
+        #    print kh_num
 
     def get_avg_width(self,cnts):
         """
         """
+        cnts = sorted(cnts,key=lambda x:x["w"])
         w_list = []
         for _cnt in cnts:
             w_list.append(_cnt.get("w"))
         avg_width = sum(w_list)/len(w_list)
-        return avg_width
+        #return avg_width
+        return cnts[-1].get("w")
 
 
 
@@ -166,10 +293,15 @@ if __name__ == "__main__":
     img_path = "test.jpg"
     #quenos = [1,4,7,8,9,10,11] 
     #quenos = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25] 
-    #quenos = [1,2,3,4,5,6,7,8,9,10,11] 
-    quenos = [1,2,3,4,5,6,7,8,9,10,11,12] 
-    #quenos = [2,3,4,5] 
+    quenos = [1,2,3,5,6,7,8,9,10,11,12,13,14] 
+    quenos = [2,3,4,5] 
     #quenos = [1,2,3,4,5,6,7,8,9] 
+    #quenos = [1,2,3,4,5,6] 
+    quenos = [1,2,3,4,5,6,7,8,9,10,11,12] 
+    quenos = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18] 
+    #quenos = [1,2,3,4,5,6,7,8,9,10,11,12,13] 
+    quenos = [1,2,3,4,5,6,7,8,9,10,11] 
+    quenos = [1,4,7,8,9,10,11] 
 
     dpobj = DetectPaper(img_path,quenos)
     dpobj.rec_all_fill_cnts()
