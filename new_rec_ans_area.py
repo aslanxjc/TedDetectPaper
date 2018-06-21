@@ -8,11 +8,6 @@ from imutils.perspective import four_point_transform
 import os
 import json
 from PIL import Image,ImageDraw,ImageOps
-
-#os.environ.setdefault("DJANGO_SETTINGS_MODULE","ss_mark.settings")
-#from ss_mark.models import Paper as ssPaper,PaperPieces
-#from django.db.models import Q
-
 from rec_ans_area_base import RecAnsAreaBase
 
 def mylog(**kargs):
@@ -112,7 +107,6 @@ class RecAnsArea:
 
     def closeopration(self):  
         kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (10, 10))  
-        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (self.width/2, 1))  
 
         self.iClose = cv2.morphologyEx(self.image, cv2.MORPH_CLOSE, kernel)  
         #输出闭操作后的图像
@@ -160,24 +154,45 @@ class RecAnsArea:
 
         return cut_path
 
+    def _dilate_for_inverse(self,ans_area_path=None,w=3,h=3):
+        '''
+        图像膨胀操作
+        '''
+        inverse_image = cv2.imread(ans_area_path)
+        inverse_gray = cv2.cvtColor(inverse_image, cv2.COLOR_BGR2GRAY)
+        #对灰度图进行二值化处理
+        ret,inverse_thresh = cv2.threshold(inverse_gray,0,250,cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)
 
-    def get_inverse_image(self):
-        """获取反色处理后的图片
-        """
+        dilsize = cv2.getStructuringElement(cv2.MORPH_RECT,(w,h))
+        inverse_dilate_image = cv2.dilate(inverse_thresh,dilsize)
         #输出膨胀操作后的图像
         spt_lst = os.path.splitext(self.image_path)
+        inverse_dilate_image_path = spt_lst[0] + '_dilate' + spt_lst[1]
+        cv2.imwrite(inverse_dilate_image_path,inverse_dilate_image)
+        return inverse_dilate_image_path 
+
+
+
+
+    def get_inverse_image(self,org_ans_path):
+        """获取反色处理后的图片
+        """
+        print 11111111111111
+        #输出膨胀操作后的图像
+        spt_lst = os.path.splitext(org_ans_path)
         inverse_path = spt_lst[0] + '_inverse' + spt_lst[1]
-        im02 = Image.open(self.dilate_image_path)
+        inverse_image = self._dilate_for_inverse(org_ans_path)
+        im02 = Image.open(inverse_image)
         im = ImageOps.invert(im02)
         im.save(inverse_path)
         self.inverse_image_path = inverse_path
-
+        return self.inverse_image_path
 
 
     def get_ans_path(self,std_point=None):
         """识别出答案轮廓
         """
-        dilate_image = self._dilate(2,2)
+        dilate_image = self._dilate(5,5)
         cnts = cv2.findContours(dilate_image, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         cnts = cv2.findContours(dilate_image, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
         cnts = cv2.findContours(dilate_image, cv2.RETR_EXTERNAL, cv2.RETR_CCOMP)
@@ -218,10 +233,8 @@ class RecAnsArea:
                     cut_point = (x-60,y-50,x+w+60,y+h+50)
 
                     cut_path = self.cut_ans_area(cut_point)
-
                     reaab = RecAnsAreaBase(cut_path)
                     base_cnts_count = reaab.rec_cnts()
-                    self.inverse_image_path = reaab.inverse_image_path
 
                     all_cnts_dct[base_cnts_count] = cut_path,org_cut_point
 
@@ -236,7 +249,11 @@ class RecAnsArea:
             except:
                 ans_area_path = None
                 org_cut_point = None
-        print ans_area_path,org_cut_point,self.inverse_image_path
+
+        #获取答案膨胀反色图片
+        print ans_area_path,6666666666666666666666666666666666666666666
+        self.inverse_image_path = self.get_inverse_image(ans_area_path) 
+        print self.inverse_image_path,77777777777777777777
         return ans_area_path,org_cut_point,self.inverse_image_path
 
 

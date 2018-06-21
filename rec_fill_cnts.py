@@ -46,8 +46,22 @@ class CloseImage:
         close_path = spt_lst[0] + '_thresh' + spt_lst[1]
         cv2.imwrite(close_path,self.thresh)
 
+    def _dilate(self,w=5,h=5):
+        '''
+        图像膨胀操作
+        '''
+        dilsize = cv2.getStructuringElement(cv2.MORPH_RECT,(w,h))
+        self.image = cv2.dilate(self.image,dilsize)
+        #输出膨胀操作后的图像
+        spt_lst = os.path.splitext(self.image_path)
+        close_path = spt_lst[0] + 'close_dilate' + spt_lst[1]
+        cv2.imwrite(close_path,self.image)
+        self.dilate_image_path = close_path
+        return self.image
+
 
     def closeopration(self,w=18,h=15):  
+        #self._dilate()
         kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (w, h))  
         self.iClose = cv2.morphologyEx(self.image, cv2.MORPH_CLOSE, kernel)  
         #输出闭操作后的图像
@@ -115,12 +129,14 @@ def get_ans_area_cnts(inverse_image_path="test_cut_(543, 2219, 1860, 2603)_inver
     """
     w =std_point.get("w")
     h =std_point.get("h")
+    w = 37
+    h = 48
     #闭操作清除杂质
     image = CloseImage(inverse_image_path)
     if len(std_quenos) > 20:
-        cimage_path = image.closeopration(int(w/4.5),int(h/3.5))
+        cimage_path = image.closeopration(int(w/2.5),int(h/2.5))
     else:
-        cimage_path = image.closeopration(int(w/2.5),int(h/3.5))
+        cimage_path = image.closeopration(int(w/2.5),int(h/2.5))
     #从闭操作后的图像提取轮廓
     ccimage = CloseCntsDetect(cimage_path)
     cnts = ccimage.get_cnts()

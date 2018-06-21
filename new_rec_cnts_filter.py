@@ -22,19 +22,36 @@ def mylog(**kargs):
     print '----------------------end--------------------\n\n\n\n'
 
 class CntsFilter:
-    def __init__(self,cnts_data=[],org_ans_point=()):
+    def __init__(self,cnts_data=[],quenos=[],org_ans_point=()):
         """
         """
         self.cnts_data = cnts_data
         self.org_ans_point = org_ans_point
+        self.quenos = quenos
 
     def get_std_wh(self):
         """
         """
-        wh_cnts = sorted(self.cnts_data,key=lambda x:x["h"])
+        wh_cnts = sorted(self.cnts_data,key=lambda x:x["w"])
         std_w = wh_cnts[len(wh_cnts)/2].get("w")
         std_h = wh_cnts[len(wh_cnts)/2].get("h")
+        mylog(wh_cnts=wh_cnts)
         return std_w,std_h
+
+    def denoise_data_bwh(self,cnts=[]):
+        """pass
+        """
+        _cnts = []
+        std_w,std_h = self.get_std_wh()
+        for _cnt in cnts:
+            w = _cnt.get("w")
+            h = _cnt.get("h")
+            if w < std_w/2.0:
+                continue
+            if h < std_h/2.0:
+                continue
+            _cnts.append(_cnt)
+        return _cnts
 
     def group_by_y(self,cnts_data=[],std_queno=[]):
         """
@@ -46,6 +63,10 @@ class CntsFilter:
             y = _point.get("y")
             w = _point.get("w")
             h = _point.get("h")
+            if w < std_w/2.0:
+                continue
+            if h < std_h/2.0:
+                continue
 
             if not tmp_dct:
                 tmp_dct[y] = [_point]
@@ -60,7 +81,8 @@ class CntsFilter:
         _keys.reverse()
         for _key in _keys:
             _std_x_cnts = tmp_dct[_key]
-            if len(_std_x_cnts) == 6:
+            #if len(_std_x_cnts) == 7:
+            if len(_std_x_cnts) == len(self.quenos):
                 std_x_points = _std_x_cnts
                 return std_x_points
         return None
@@ -75,6 +97,10 @@ class CntsFilter:
             y = _point.get("y")
             w = _point.get("w")
             h = _point.get("h")
+            if w < std_w/2.0:
+                continue
+            if h < std_h/2.0:
+                continue
 
             if not tmp_dct:
                 tmp_dct[x] = [_point]
@@ -98,7 +124,11 @@ class CntsFilter:
         """
         """
         std_w,std_h = self.get_std_wh()
+        print std_w,11111111111111
+        print std_h,22222222222222
+        self.cnts_data = self.denoise_data_bwh(self.cnts_data)
         #按y进行排序
+        #print self.cnts_data,3333333333333
         _ycnts = sorted(self.cnts_data,key=lambda x:x["y"])
         std_x_points = self.group_by_y(_ycnts)
         std_x_points = sorted(std_x_points,key=lambda x:x["x"])

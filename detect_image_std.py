@@ -55,8 +55,6 @@ class ImageDetect:
         self.height = self.image.shape[0]
 
         #设置切割点
-        #cut_box = (0,0,self.width*0.25,self.height*0.125)
-        #cut_box = (0,0,self.width*0.125,self.height*0.125)
         cut_box = (0,0,self.width*0.875,self.height*0.125)
         cut_box = (self.width*0.875,0,self.width,self.height*0.125)
         cut_box = (0,0,self.width,self.height*0.125)

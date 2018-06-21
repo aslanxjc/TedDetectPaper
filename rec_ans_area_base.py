@@ -122,14 +122,16 @@ class RecAnsAreaBase:
 
     def closeopration(self):  
         kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (10, 10))  
-        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (self.width/2, 1))  
+        #kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (self.width/2, 1))  
 
         self.iClose = cv2.morphologyEx(self.image, cv2.MORPH_CLOSE, kernel)  
         #输出闭操作后的图像
         spt_lst = os.path.splitext(self.image_path)
-        close_path = spt_lst[0] + '_close' + spt_lst[1]
+        close_path = spt_lst[0] + '_close11' + spt_lst[1]
         cv2.imwrite(close_path,self.iClose)
-        return self.iClose  
+        self.close_gray = cv2.cvtColor(self.iClose, cv2.COLOR_BGR2GRAY)
+        self.close_thresh = cv2.threshold(self.close_gray.copy(),200,255,cv2.THRESH_BINARY_INV)[1]
+        return self.close_thresh  
 
 
     def close_thresh(self):
@@ -160,8 +162,8 @@ class RecAnsAreaBase:
         """
         dilate_image = self._dilate(3,3)
         dilate_image = self._dilate(2,2)
-        #dilate_image = self._dilate(5,5)
-        cnts = cv2.findContours(dilate_image, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+        #cnts = cv2.findContours(dilate_image, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+        cnts = cv2.findContours(self.closeopration(), cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
         #cnts = cv2.findContours(dilate_image, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
         all_attr = cnts[1]
         cnts = cnts[0] if imutils.is_cv2() else cnts[1]
