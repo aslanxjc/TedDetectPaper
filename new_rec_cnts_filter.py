@@ -120,7 +120,7 @@ class CntsFilter:
                 return std_y_points
         return None
 
-    def sep_std_cnts(self):
+    def sep_std_cnts(self,flag=False):
         """
         """
         std_w,std_h = self.get_std_wh()
@@ -132,18 +132,26 @@ class CntsFilter:
         _ycnts = sorted(self.cnts_data,key=lambda x:x["y"])
         std_x_points = self.group_by_y(_ycnts)
         std_x_points = sorted(std_x_points,key=lambda x:x["x"])
-        #mylog(std_x_points=std_x_points)
+        mylog(std_x_points=std_x_points)
         #按x进行排序
         _xcnts = sorted(self.cnts_data,key=lambda x:x["x"])
         std_y_points = self.group_by_x(_xcnts)
         std_y_points = sorted(std_y_points,key=lambda x:x["y"])
-        #mylog(std_y_points=std_y_points)
-        #考号区域轮廓
-        kh_points = filter(lambda x:x["x"]<std_x_points[0]["x"]-std_w,self.cnts_data)
-        #mylog(kh_points=kh_points)
+        mylog(std_y_points=std_y_points)
 
         #答题填涂的轮廓
-        ans_points = filter(lambda x:x["x"]>std_x_points[0]["x"]-std_w,self.cnts_data)
+        ans_points = filter(lambda x:x["x"]>std_x_points[0]["x"]-std_w \
+                        and x["y"]>std_y_points[0]["y"]-std_h,self.cnts_data)
+
+        if flag:
+            #上下结构(英语)考号区域轮廓
+            kh_points = filter(lambda x:x["y"]<std_y_points[0]["y"]-std_h,self.cnts_data)
+            mylog(kh_points=kh_points)
+        else:
+            #考号区域轮廓
+            kh_points = filter(lambda x:x["x"]<std_x_points[0]["x"]-std_w,self.cnts_data)
+            mylog(kh_points=kh_points)
+
         
         for _p in std_x_points:
             try:
