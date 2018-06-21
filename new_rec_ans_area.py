@@ -239,7 +239,7 @@ class RecAnsArea:
                     all_cnts_dct[base_cnts_count] = cut_path,org_cut_point
 
             #从统计中找出轮廓数最多的作为答题卡
-            mylog(base_cnts_count=base_cnts_count)
+            #mylog(base_cnts_count=base_cnts_count)
             keys = all_cnts_dct.keys()
             keys.reverse()
             try:

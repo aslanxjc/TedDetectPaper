@@ -109,7 +109,7 @@ class CloseImage:
                 else:
                     tmp_dct[x1] = [_line]
 
-        mylog(tmp_dct=dict(tmp_dct))
+        #mylog(tmp_dct=dict(tmp_dct))
         for i,tpl in enumerate(tmp_dct.items()):
             lines_list = tpl[1]
             print lines_list,555555555555555555

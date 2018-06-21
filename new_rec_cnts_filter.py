@@ -35,7 +35,7 @@ class CntsFilter:
         wh_cnts = sorted(self.cnts_data,key=lambda x:x["w"])
         std_w = wh_cnts[len(wh_cnts)/2].get("w")
         std_h = wh_cnts[len(wh_cnts)/2].get("h")
-        mylog(wh_cnts=wh_cnts)
+        #mylog(wh_cnts=wh_cnts)
         return std_w,std_h
 
     def denoise_data_bwh(self,cnts=[]):

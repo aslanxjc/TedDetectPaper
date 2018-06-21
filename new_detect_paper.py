@@ -122,7 +122,9 @@ class DetectPaper:
         x2 = std_kh_line.get("x2")
         y2 = std_kh_line.get("y2")
 
-        std_h = abs(y2-y1)/6
+        print y2-y1,888888888888
+        std_h = round(abs(y2-y1)/6.0)
+        print std_h,9999999999999999999
         std_w = abs(rline.get("x1")-std_kh_line.get("x1"))/10
 
         kh_roi_dct = collections.OrderedDict()
@@ -131,10 +133,7 @@ class DetectPaper:
             kh_nums = []
             for j,nx in enumerate(range(0,10)):
 
-                if i>0:
-                    _roi_point = (int(x1+std_w*j+2),int(y1+i*std_h+2),int(x1+(j+1)*std_w*1),int(y1+(i+1)*std_h))
-                else:
-                    _roi_point = (int(x1+std_w*j+2),int(y1+i*std_h),int(x1+(j+1)*std_w*1),int(y1+(i+1)*std_h))
+                _roi_point = (int(x1+std_w*j+2),int(y1+i*std_h),int(x1+(j+1)*std_w*1),int(y1+(i+1)*std_h+2))
 
                 kh_nums.append(_roi_point)
 
@@ -163,10 +162,9 @@ class DetectPaper:
         std_point_x_x = std_point_x.get("x")
         std_point_x_w = std_point_x.get("w")
         #答题框高度
-        print self.org_cut_point,6666666666666666666
         ah = self.org_cut_point[2][1]-self.org_cut_point[1][1]
         for _ld in lines_data:
-            if _ld.get("h")<ah/6*5:
+            if _ld.get("h")<ah/20*19:
                 continue
             new_lines_data_pre.append(_ld)
             if abs(std_point_x_x-_ld.get("x2"))>std_point_x_w*3:
@@ -191,7 +189,7 @@ class DetectPaper:
                 else:
                     tmp_dct[x1] = [_line]
 
-        mylog(tmp_dct=dict(tmp_dct))
+        #mylog(tmp_dct=dict(tmp_dct))
         for x,_lines in tmp_dct.items():
             _lines = sorted(_lines,key=lambda x:x["h"],reverse=True)
             _lines = _lines[0]
@@ -202,7 +200,7 @@ class DetectPaper:
         #按x倒序排
         _std_lines = None
         new_lines_data_pre = sorted(new_lines_data_pre,key=lambda x:x["x1"],reverse=True)
-        mylog(new_lines_data_pre=new_lines_data_pre)
+        #mylog(new_lines_data_pre=new_lines_data_pre)
         for _l in new_lines_data_pre:
             if abs(_l.get("h")-_lines["h"]) < std_point_x_w*3\
                      and abs(_l.get("x1")-_lines["x1"]) > std_point_x_w*10:
@@ -217,9 +215,9 @@ class DetectPaper:
         all_cnts,std_kh_lines = self.rec_all_fill_cnts()
         cntsfilter = CntsFilter(all_cnts,self.quenos,self.org_cut_point)
         self.std_x_points,self.std_y_points,self.kh_points = cntsfilter.sep_std_cnts()
-        mylog(std_x_points=self.std_x_points)
-        mylog(std_y_points=self.std_y_points)
-        mylog(kh_points=self.kh_points)
+        #mylog(std_x_points=self.std_x_points)
+        #mylog(std_y_points=self.std_y_points)
+        #mylog(kh_points=self.kh_points)
         roi_points_dct = self.get_roi_points(self.std_x_points,self.std_y_points)
         ###########################
         #答案识别
@@ -241,13 +239,13 @@ class DetectPaper:
         #############################
         #考号识别
         kh_points = sorted(self.kh_points,key=lambda x:x["y"])
-        mylog(std_x_points=self.std_x_points)
+        #mylog(std_x_points=self.std_x_points)
         std_point_x = self.std_x_points[0].get("x")
         std_point_w = self.std_x_points[0].get("w")
 
         std_kh_line,rline = self.filter_lines(std_kh_lines,self.std_x_points[0])
 
-        print std_kh_line,rline,888888888888888888888888888
+        #print std_kh_line,rline,888888888888888888888888888
 
         avg_width = self.get_avg_width(kh_points)
         std_kh_x = std_point_x - avg_width*1.5*10
@@ -266,7 +264,7 @@ class DetectPaper:
                 kh = sorted(kh,key=lambda x:x["v"],reverse=True)
 
                 kh_result[i] = kh[0].get("n")
-            mylog(kh_result=kh_result)
+            mylog(kh_result=dict(kh_result))
 
 
         #for _kh in kh_points:
@@ -275,6 +273,7 @@ class DetectPaper:
         #    print (_kh_x - std_kh_x)/(1.5*avg_width)
         #    kh_num = abs(int((_kh_x - std_kh_x)/(1.5*avg_width)))
         #    print kh_num
+        return kh_result,ans_result
 
     def get_avg_width(self,cnts):
         """
@@ -293,15 +292,16 @@ if __name__ == "__main__":
     img_path = "test.jpg"
     #quenos = [1,4,7,8,9,10,11] 
     #quenos = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25] 
-    quenos = [1,2,3,5,6,7,8,9,10,11,12,13,14] 
     quenos = [2,3,4,5] 
     #quenos = [1,2,3,4,5,6,7,8,9] 
     #quenos = [1,2,3,4,5,6] 
-    quenos = [1,2,3,4,5,6,7,8,9,10,11,12] 
     quenos = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18] 
     #quenos = [1,2,3,4,5,6,7,8,9,10,11,12,13] 
     quenos = [1,2,3,4,5,6,7,8,9,10,11] 
     quenos = [1,4,7,8,9,10,11] 
+    quenos = [1,2,3,5,6,7,8,9,10,11,12,13,14] 
+    quenos = [1,2,3,4,5,6,7,8,9,10,11,12] 
+    #quenos = [1,2,3,5,6,8,9,10,11,12,13] 
 
     dpobj = DetectPaper(img_path,quenos)
     dpobj.rec_all_fill_cnts()
