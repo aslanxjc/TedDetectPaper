@@ -160,7 +160,8 @@ class DetectPaper:
         new_lines_data_pre = []
 
         std_point_x_x = std_point_x.get("x")
-        std_point_x_w = std_point_x.get("w")
+        print std_point_x_x,777777777777777777
+        std_point_x_l_w = std_point_x.get("w")
         #答题框高度
         ah = self.org_cut_point[2][1]-self.org_cut_point[1][1]
         for _ld in lines_data:
@@ -190,6 +191,8 @@ class DetectPaper:
                     tmp_dct[x1] = [_line]
 
         #mylog(tmp_dct=dict(tmp_dct))
+
+        _lines = []
         for x,_lines in tmp_dct.items():
             _lines = sorted(_lines,key=lambda x:x["h"],reverse=True)
             _lines = _lines[0]
@@ -197,19 +200,70 @@ class DetectPaper:
 
         #向前寻找标准线
         new_lines_data_pre = filter(lambda x:x["x1"]<_lines["x1"],new_lines_data_pre)
+        
+        #前面标线的最大值
+        pre_max_h = sorted(new_lines_data_pre,key=lambda x:x["h"],reverse=True)[0]["h"]
+
         #按x倒序排
         _std_lines = None
         new_lines_data_pre = sorted(new_lines_data_pre,key=lambda x:x["x1"],reverse=True)
         #mylog(new_lines_data_pre=new_lines_data_pre)
         for _l in new_lines_data_pre:
-            if abs(_l.get("h")-_lines["h"]) < std_point_x_w*3\
+            if abs(_l.get("h")-pre_max_h) < std_point_x_w/3\
                      and abs(_l.get("x1")-_lines["x1"]) > std_point_x_w*10:
                 _std_lines = _l
                 break
         return _std_lines,_lines
 
+    def filter_lines_en(self,lines_data,std_point_x_l):
+        """上下结构标准线寻找
+        """
+        new_lines_data = []
+        new_lines_data_pre = []
 
-    def rec_paper(self):
+        std_point_x_l_x = std_point_x_l.get("x")
+        std_point_x_l_w = std_point_x_l.get("w")
+        #答题框高度
+        ah = self.org_cut_point[2][1]-self.org_cut_point[1][1]
+        for _ld in lines_data:
+            if _ld.get("h")<ah/4:
+                continue
+            if _ld.get("h")>ah/3*2:
+                new_lines_data.append(_ld)
+                continue
+            if _ld.get("x1")>std_point_x_l_x:
+                continue
+
+            new_lines_data_pre.append(_ld)
+
+        #右侧基准标线
+        new_lines_data = sorted(new_lines_data,key=lambda x:x["x1"])
+        mylog(new_lines_data=new_lines_data)
+        mylog(new_lines_data_pre=new_lines_data_pre)
+        _lines = new_lines_data[0]
+
+
+        #向前寻找标准线
+        new_lines_data_pre = filter(lambda x:x["x1"]<_lines["x1"],new_lines_data_pre)
+
+        #前面标线的最大值
+        pre_max_h = sorted(new_lines_data_pre,key=lambda x:x["h"],reverse=True)[0]["h"]
+
+        #按x倒序排
+        _std_lines = None
+        new_lines_data_pre = sorted(new_lines_data_pre,key=lambda x:x["x1"],reverse=True)
+        #mylog(new_lines_data_pre=new_lines_data_pre)
+        for _l in new_lines_data_pre:
+            if abs(_l.get("h")-pre_max_h) < std_point_x_l_w/3\
+                     and abs(_l.get("x1")-_lines["x1"]) > std_point_x_l_w*10:
+                _std_lines = _l
+                break
+        return _std_lines,_lines
+
+
+
+
+    def rec_paper(self,flag = False):
         """
         """
         all_cnts,std_kh_lines = self.rec_all_fill_cnts()
@@ -243,7 +297,10 @@ class DetectPaper:
         std_point_x = self.std_x_points[0].get("x")
         std_point_w = self.std_x_points[0].get("w")
 
-        std_kh_line,rline = self.filter_lines(std_kh_lines,self.std_x_points[0])
+        if flag:
+            std_kh_line,rline = self.filter_lines_en(std_kh_lines,self.std_x_points[-1])
+        else:
+            std_kh_line,rline = self.filter_lines(std_kh_lines,self.std_x_points[0])
 
         #print std_kh_line,rline,888888888888888888888888888
 
@@ -301,7 +358,7 @@ if __name__ == "__main__":
     quenos = [1,2,3,5,6,7,8,9,10,11,12,13,14] 
     quenos = [1,2,3,4,5,6,7,8,9,10,11,12] 
     #quenos = [1,2,3,5,6,8,9,10,11,12,13] 
-    quenos = [1,2,3,4,5,6] 
+    quenos = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24] 
 
     dpobj = DetectPaper(img_path,quenos)
     dpobj.rec_all_fill_cnts()
