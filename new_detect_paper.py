@@ -114,7 +114,7 @@ class DetectPaper:
         return roi_points_dct
 
     
-    def get_kh_roi(self,std_kh_line,rline):
+    def get_kh_roi(self,std_kh_line,rline,std_point_w):
         """
         """
         x1 = std_kh_line.get("x1")
@@ -125,15 +125,24 @@ class DetectPaper:
         print y2-y1,888888888888
         std_h = round(abs(y2-y1)/6.0)
         print std_h,9999999999999999999
+        #原来的
         std_w = abs(rline.get("x1")-std_kh_line.get("x1"))/10
+        #std_w = abs(rline.get("x1")-(std_kh_line.get("x1")+std_point_w*2))/10
 
         kh_roi_dct = collections.OrderedDict()
         mask = np.zeros(self.thresh.shape[0:2],dtype=np.uint8) 
         for i,_ny in enumerate(range(0,6)):
             kh_nums = []
             for j,nx in enumerate(range(0,10)):
+                #原来的
+                _roi_point = (int(x1+std_w*1*j+2),int(y1+i*std_h),int(x1+(j+1)*std_w*1),int(y1+(i+1)*std_h+2))
 
-                _roi_point = (int(x1+std_w*j+2),int(y1+i*std_h),int(x1+(j+1)*std_w*1),int(y1+(i+1)*std_h+2))
+                #if j==0:
+                #    _roi_point = (int(x1+std_w*j+std_w*0.1+2),int(y1+i*std_h),int(x1+(j+1)*std_w+std_w*0.1),int(y1+(i+1)*std_h+2))
+                ##elif j==9:
+                ##    _roi_point = (int(x1+std_w*j+2),int(y1+i*std_h),int(x1+(j+1)*std_w),int(y1+(i+1)*std_h+2))
+                #else:
+                #    _roi_point = (int(x1+std_w*1*j+2),int(y1+i*std_h),int(x1+(j+1)*std_w*1),int(y1+(i+1)*std_h+2))
 
                 kh_nums.append(_roi_point)
 
@@ -268,7 +277,7 @@ class DetectPaper:
         """
         all_cnts,std_kh_lines = self.rec_all_fill_cnts()
         cntsfilter = CntsFilter(all_cnts,self.quenos,self.org_cut_point)
-        self.std_x_points,self.std_y_points,self.kh_points = cntsfilter.sep_std_cnts()
+        self.std_x_points,self.std_y_points,self.kh_points = cntsfilter.sep_std_cnts(flag)
         #mylog(std_x_points=self.std_x_points)
         #mylog(std_y_points=self.std_y_points)
         #mylog(kh_points=self.kh_points)
@@ -308,7 +317,7 @@ class DetectPaper:
         std_kh_x = std_point_x - avg_width*1.5*10
         kh_result = collections.OrderedDict()
         if std_kh_line:
-            kh_roi_dct = self.get_kh_roi(std_kh_line,rline)
+            kh_roi_dct = self.get_kh_roi(std_kh_line,rline,std_point_w)
             for i,_kr in kh_roi_dct.items():
                 kh = []
                 for j,_rp in enumerate(_kr):
@@ -358,10 +367,10 @@ if __name__ == "__main__":
     quenos = [1,2,3,5,6,7,8,9,10,11,12,13,14] 
     quenos = [1,2,3,4,5,6,7,8,9,10,11,12] 
     #quenos = [1,2,3,5,6,8,9,10,11,12,13] 
-    quenos = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24] 
-    quenos = [1,2,3,4,5,6] 
+    quenos = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40] 
+    #quenos = [1,2,3,4,5,6] 
 
     dpobj = DetectPaper(img_path,quenos)
     dpobj.rec_all_fill_cnts()
-    dpobj.rec_paper()
+    dpobj.rec_paper(True)
 
