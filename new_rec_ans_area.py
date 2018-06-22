@@ -9,6 +9,7 @@ import os
 import json
 from PIL import Image,ImageDraw,ImageOps
 from rec_ans_area_base import RecAnsAreaBase
+from detect_image_std import ImageDetect
 
 def mylog(**kargs):
     '''
@@ -53,6 +54,19 @@ class RecAnsArea:
         spt_lst = os.path.splitext(self.image_path)
         close_path = spt_lst[0] + '_thresh' + spt_lst[1]
         cv2.imwrite(close_path,self.thresh)
+
+    
+    def get_std_point(self):
+        """
+        """
+        img_dect = ImageDetect(self.image_path)
+        #img_dect._init_dilate()
+        img_dect.closeopration()
+        img_dect.close_thresh()
+        std_point = img_dect.get_std_point()
+        return std_point
+    
+
 
     def _erode(self,w=5,h=10):
         '''
@@ -230,7 +244,15 @@ class RecAnsArea:
                     org_cut_point = ((x,y),(x+w,y),(x+w,y+h))
                     #这里会导致XZB2018RJHXB02004答题卡轮廓识别错误
                     #cut_point = (x+5,y+5,x+w-10,y+h-10)
-                    cut_point = (x-60,y-50,x+w+60,y+h+50)
+                    if self.get_std_point():
+                        print self.get_std_point(),9999999999999999999999999
+                        print 11111111111111111111
+                        add_w = self.get_std_point()["w"]*1.5
+                        add_h = self.get_std_point()["h"]
+                        #cut_point = (x-add_w,y-add_h,x+w+add_w,y+h+add_h)
+                        cut_point = (x,y,x+w+add_w,y+h+add_h/2)
+                    else:
+                        cut_point = (x-60,y-50,x+w+60,y+h+50)
 
                     cut_path = self.cut_ans_area(cut_point)
                     reaab = RecAnsAreaBase(cut_path)

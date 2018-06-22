@@ -171,15 +171,19 @@ class DetectPaper:
         std_point_x_x = std_point_x.get("x")
         print std_point_x_x,777777777777777777
         std_point_x_w = std_point_x.get("w")
+        std_point_x_h = std_point_x.get("h")
         #答题框高度
         ah = self.org_cut_point[2][1]-self.org_cut_point[1][1]
         for _ld in lines_data:
-            if _ld.get("h")<ah/20*19:
+            #if _ld.get("h")<ah/4*3:
+            if _ld.get("h")<std_point_x_h*10:
                 continue
             new_lines_data_pre.append(_ld)
             if abs(std_point_x_x-_ld.get("x2"))>std_point_x_w*3:
                 continue
             new_lines_data.append(_ld)
+
+        mylog(new_lines_data_pre=new_lines_data_pre)
 
         #考号标准线识别
         lines_data = sorted(new_lines_data,key=lambda x:x["x1"])
@@ -365,12 +369,13 @@ if __name__ == "__main__":
     quenos = [1,2,3,4,5,6,7,8,9,10,11] 
     quenos = [1,4,7,8,9,10,11] 
     quenos = [1,2,3,5,6,7,8,9,10,11,12,13,14] 
-    quenos = [1,2,3,4,5,6,7,8,9,10,11,12] 
     #quenos = [1,2,3,5,6,8,9,10,11,12,13] 
     quenos = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40] 
     #quenos = [1,2,3,4,5,6] 
+    quenos = [1,2,3,4,5,6,7,8,9,10,11,12,13] 
+    quenos = [1,2,3,4,5,6,7,8,9,10] 
 
     dpobj = DetectPaper(img_path,quenos)
     dpobj.rec_all_fill_cnts()
-    dpobj.rec_paper(True)
+    dpobj.rec_paper()
 
