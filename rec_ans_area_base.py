@@ -97,11 +97,9 @@ class RecAnsAreaBase:
     def get_inverse_image(self):
         """获取反色处理后的图片
         """
-        print 11111111111111
         #输出膨胀操作后的图像
         spt_lst = os.path.splitext(self.image_path)
         inverse_path = spt_lst[0] + '_inverse' + spt_lst[1]
-        print self.dilate_image_path,222222222222222
         im02 = Image.open(self.dilate_image_path)
         im = ImageOps.invert(im02)
         im.save(inverse_path)

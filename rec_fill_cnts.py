@@ -29,20 +29,12 @@ class CloseImage:
         self.image_path = image_path
         self.image = cv2.imread(self.image_path)
 
-        #图片的宽高度
         self.width = self.image.shape[1]
         self.height = self.image.shape[0]
-
-        #图片转成灰度图
         self.gray = cv2.cvtColor(self.image, cv2.COLOR_BGR2GRAY)
-
-        #边缘检测后的图
         self.edged = cv2.Canny(self.gray, 75, 200)
-
-        #对灰度图进行二值化处理
         ret,thresh = cv2.threshold(self.gray,0,250,cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)
         self.thresh  = thresh
-        #输出二值化操作后的图像
         spt_lst = os.path.splitext(self.image_path)
         close_path = spt_lst[0] + '_thresh' + spt_lst[1]
         cv2.imwrite(close_path,self.thresh)
@@ -53,7 +45,6 @@ class CloseImage:
         '''
         dilsize = cv2.getStructuringElement(cv2.MORPH_RECT,(w,h))
         self.image = cv2.dilate(self.image,dilsize)
-        #输出膨胀操作后的图像
         spt_lst = os.path.splitext(self.image_path)
         close_path = spt_lst[0] + 'close_dilate' + spt_lst[1]
         cv2.imwrite(close_path,self.image)
@@ -71,9 +62,7 @@ class CloseImage:
         lines = cv2.HoughLinesP(self.thresh,1,np.pi,118,minLineLength,maxLineGap)
         for line in lines[:,:,:]:
             _tmp_dct = {}
-            print line[0,:]
             x2,y2,x1,y1 = line[0,:]
-            #print x1,y1,x2,y2
             _tmp_dct["x1"] = x1
             _tmp_dct["y1"] = y1
             _tmp_dct["x2"] = x2
@@ -112,7 +101,6 @@ class CloseImage:
         #mylog(tmp_dct=dict(tmp_dct))
         for i,tpl in enumerate(tmp_dct.items()):
             lines_list = tpl[1]
-            print lines_list,555555555555555555
             lines_list = sorted(lines_list,key=lambda x:x["h"],reverse=True)
             #return lines_list
             if i == 4:

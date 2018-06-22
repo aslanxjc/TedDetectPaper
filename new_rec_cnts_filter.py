@@ -35,7 +35,6 @@ class CntsFilter:
         wh_cnts = sorted(self.cnts_data,key=lambda x:x["w"])
         std_w = wh_cnts[len(wh_cnts)/2].get("w")
         std_h = wh_cnts[len(wh_cnts)/2].get("h")
-        #mylog(wh_cnts=wh_cnts)
         return std_w,std_h
 
     def denoise_data_bwh(self,cnts=[]):
@@ -75,7 +74,6 @@ class CntsFilter:
                     tmp_dct[tmp_dct.keys()[-1]].append(_point)
                 else:
                     tmp_dct[y] = [_point]
-        #mylog(tmp_dct=dict(tmp_dct))
         #字典反序
         _keys = tmp_dct.keys()
         _keys.reverse()
@@ -109,7 +107,6 @@ class CntsFilter:
                     tmp_dct[tmp_dct.keys()[-1]].append(_point)
                 else:
                     tmp_dct[x] = [_point]
-        #mylog(tmp_dct=dict(tmp_dct))
         #字典反序
         _keys = tmp_dct.keys()
         _keys.reverse()
@@ -124,34 +121,21 @@ class CntsFilter:
         """
         """
         std_w,std_h = self.get_std_wh()
-        print std_w,11111111111111
-        print std_h,22222222222222
         self.cnts_data = self.denoise_data_bwh(self.cnts_data)
-        #按y进行排序
-        #print self.cnts_data,3333333333333
         _ycnts = sorted(self.cnts_data,key=lambda x:x["y"])
         std_x_points = self.group_by_y(_ycnts)
         std_x_points = sorted(std_x_points,key=lambda x:x["x"])
-        mylog(std_x_points=std_x_points)
-        #按x进行排序
         _xcnts = sorted(self.cnts_data,key=lambda x:x["x"])
         std_y_points = self.group_by_x(_xcnts)
         std_y_points = sorted(std_y_points,key=lambda x:x["y"])
-        mylog(std_y_points=std_y_points)
 
-        #答题填涂的轮廓
         ans_points = filter(lambda x:x["x"]>std_x_points[0]["x"]-std_w \
                         and x["y"]>std_y_points[0]["y"]-std_h,self.cnts_data)
 
         if flag:
-            #上下结构(英语)考号区域轮廓
             kh_points = filter(lambda x:x["y"]<std_y_points[0]["y"]-std_h,self.cnts_data)
-            mylog(kh_points=kh_points)
         else:
-            #考号区域轮廓
             kh_points = filter(lambda x:x["x"]<std_x_points[0]["x"]-std_w,self.cnts_data)
-            mylog(kh_points=kh_points)
-
         
         for _p in std_x_points:
             try:
@@ -163,7 +147,6 @@ class CntsFilter:
                 ans_points.remove(_p)
             except:
                 pass
-        #mylog(ans_points=ans_points)
 
         return std_x_points,std_y_points,kh_points
 

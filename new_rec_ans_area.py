@@ -191,8 +191,6 @@ class RecAnsArea:
     def get_inverse_image(self,org_ans_path):
         """获取反色处理后的图片
         """
-        print 11111111111111
-        #输出膨胀操作后的图像
         spt_lst = os.path.splitext(org_ans_path)
         inverse_path = spt_lst[0] + '_inverse' + spt_lst[1]
         inverse_image = self._dilate_for_inverse(org_ans_path)
@@ -245,8 +243,6 @@ class RecAnsArea:
                     #这里会导致XZB2018RJHXB02004答题卡轮廓识别错误
                     #cut_point = (x+5,y+5,x+w-10,y+h-10)
                     if self.get_std_point():
-                        print self.get_std_point(),9999999999999999999999999
-                        print 11111111111111111111
                         add_w = self.get_std_point()["w"]*1.5
                         add_h = self.get_std_point()["h"]
                         #cut_point = (x-add_w,y-add_h,x+w+add_w,y+h+add_h)
@@ -273,9 +269,7 @@ class RecAnsArea:
                 org_cut_point = None
 
         #获取答案膨胀反色图片
-        print ans_area_path,6666666666666666666666666666666666666666666
         self.inverse_image_path = self.get_inverse_image(ans_area_path) 
-        print self.inverse_image_path,77777777777777777777
         return ans_area_path,org_cut_point,self.inverse_image_path,self.get_std_point()
 
 

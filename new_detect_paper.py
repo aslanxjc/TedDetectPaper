@@ -123,9 +123,7 @@ class DetectPaper:
         x2 = std_kh_line.get("x2")
         y2 = std_kh_line.get("y2")
 
-        print y2-y1,888888888888
         std_h = round(abs(y2-y1)/6.0)
-        print std_h,9999999999999999999
         #原来的
         std_w = abs(rline.get("x1")-std_kh_line.get("x1"))/10
         #std_w = abs(rline.get("x1")-(std_kh_line.get("x1")+std_point_w*2))/10
@@ -147,18 +145,7 @@ class DetectPaper:
 
                 kh_nums.append(_roi_point)
 
-                cv2.rectangle(mask,(_roi_point[0],_roi_point[1]),
-                    (_roi_point[2],_roi_point[3]),255,-1)
-                mask = cv2.bitwise_and(self.thresh, self.thresh, mask=mask)
-                #cv2.drawContours(mask, [c], -1, 255, -1)
-                #break
-            #break
             kh_roi_dct[i] = kh_nums
-
-        #输出二值化操作后的图像
-        spt_lst = os.path.splitext(self.inverse_image_path)
-        close_path = spt_lst[0] + '_thresh_mask_kh' + spt_lst[1]
-        cv2.imwrite(close_path,mask)
 
         return kh_roi_dct
 
@@ -170,7 +157,6 @@ class DetectPaper:
         new_lines_data_pre = []
 
         std_point_x_x = std_point_x.get("x")
-        print std_point_x_x,777777777777777777
         std_point_x_w = std_point_x.get("w")
         std_point_x_h = std_point_x.get("h")
         #答题框高度
@@ -237,7 +223,6 @@ class DetectPaper:
 
         std_point_x_l_x = std_point_x_l.get("x")
         std_point_x_l_w = std_point_x_l.get("w")
-        #答题框高度
         ah = self.org_cut_point[2][1]-self.org_cut_point[1][1]
         for _ld in lines_data:
             if _ld.get("h")<ah/4:
@@ -250,23 +235,12 @@ class DetectPaper:
 
             new_lines_data_pre.append(_ld)
 
-        #右侧基准标线
         new_lines_data = sorted(new_lines_data,key=lambda x:x["x1"])
-        mylog(new_lines_data=new_lines_data)
-        mylog(new_lines_data_pre=new_lines_data_pre)
         _lines = new_lines_data[0]
-
-
-        #向前寻找标准线
         new_lines_data_pre = filter(lambda x:x["x1"]<_lines["x1"],new_lines_data_pre)
-
-        #前面标线的最大值
         pre_max_h = sorted(new_lines_data_pre,key=lambda x:x["h"],reverse=True)[0]["h"]
-
-        #按x倒序排
         _std_lines = None
         new_lines_data_pre = sorted(new_lines_data_pre,key=lambda x:x["x1"],reverse=True)
-        #mylog(new_lines_data_pre=new_lines_data_pre)
         for _l in new_lines_data_pre:
             if abs(_l.get("h")-pre_max_h) < std_point_x_l_w/3\
                      and abs(_l.get("x1")-_lines["x1"]) > std_point_x_l_w*10:
@@ -283,13 +257,7 @@ class DetectPaper:
         all_cnts,std_kh_lines = self.rec_all_fill_cnts()
         cntsfilter = CntsFilter(all_cnts,self.quenos,self.org_cut_point)
         self.std_x_points,self.std_y_points,self.kh_points = cntsfilter.sep_std_cnts(flag)
-        #mylog(std_x_points=self.std_x_points)
-        #mylog(std_y_points=self.std_y_points)
-        #mylog(kh_points=self.kh_points)
         roi_points_dct = self.get_roi_points(self.std_x_points,self.std_y_points)
-        ###########################
-        #答案识别
-        #计算roi非0像素点
         std_pixels = self.get_std_pixels(self.std_x_points)
 
         ans_options = {0:"A",1:"B",2:"C",3:"D",4:"E",5:"F",6:"G"}
@@ -304,10 +272,7 @@ class DetectPaper:
 
             ans_result[i] = select_ans
         mylog(ans_result=dict(ans_result))
-        #############################
-        #考号识别
         kh_points = sorted(self.kh_points,key=lambda x:x["y"])
-        #mylog(std_x_points=self.std_x_points)
         std_point_x = self.std_x_points[0].get("x")
         std_point_w = self.std_x_points[0].get("w")
 
@@ -315,8 +280,6 @@ class DetectPaper:
             std_kh_line,rline = self.filter_lines_en(std_kh_lines,self.std_x_points[-1])
         else:
             std_kh_line,rline = self.filter_lines(std_kh_lines,self.std_x_points[0])
-
-        #print std_kh_line,rline,888888888888888888888888888
 
         avg_width = self.get_avg_width(kh_points)
         std_kh_x = std_point_x - avg_width*1.5*10
@@ -337,13 +300,6 @@ class DetectPaper:
                 kh_result[i] = kh[0].get("n")
             mylog(kh_result=dict(kh_result))
 
-
-        #for _kh in kh_points:
-        #    _kh_x = _kh.get("x")
-        #    print _kh_x - std_kh_x
-        #    print (_kh_x - std_kh_x)/(1.5*avg_width)
-        #    kh_num = abs(int((_kh_x - std_kh_x)/(1.5*avg_width)))
-        #    print kh_num
         return kh_result,ans_result
 
     def get_avg_width(self,cnts):
