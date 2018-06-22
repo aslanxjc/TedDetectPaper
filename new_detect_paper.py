@@ -40,7 +40,8 @@ class DetectPaper:
         raaobj = RecAnsArea(self.paper_path)
         self.ans_area_path,\
             self.org_cut_point,\
-                self.inverse_image_path = raaobj.get_ans_path()
+                self.inverse_image_path,\
+                self.std_point = raaobj.get_ans_path()
 
         #反色处理好的答题卡区域图片
         self.image = cv2.imread(self.inverse_image_path)
@@ -55,7 +56,7 @@ class DetectPaper:
         """
         """
         self.get_ans_area_path()
-        all_cnts,std_kh_line = get_ans_area_cnts(self.inverse_image_path)
+        all_cnts,std_kh_line = get_ans_area_cnts(self.inverse_image_path,self.std_point)
         #答题框高度
         #ah = self.org_cut_point[3]-self.org_cut_point[1]
         #mylog(all_cnts=all_cnts)
@@ -298,7 +299,7 @@ class DetectPaper:
             for j,_rp in enumerate(_rptpl):
                 mask_roi = self.get_roi(_rp)
                 total_pixels = cv2.countNonZero(mask_roi)
-                if total_pixels > round(std_pixels/3.0*2):
+                if total_pixels > round(std_pixels/5.0*4):
                     select_ans.append(ans_options.get(j))
 
             ans_result[i] = select_ans
@@ -371,11 +372,12 @@ if __name__ == "__main__":
     quenos = [1,2,3,5,6,7,8,9,10,11,12,13,14] 
     #quenos = [1,2,3,5,6,8,9,10,11,12,13] 
     quenos = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40] 
+    quenos = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24] 
     #quenos = [1,2,3,4,5,6] 
-    quenos = [1,2,3,4,5,6,7,8,9,10,11,12,13] 
-    quenos = [1,2,3,4,5,6,7,8,9,10] 
+    #quenos = [1,2,3,4,5,6,7,8,9,10,11,12,13] 
+    #quenos = [1,2,3,4,5,6,7,8,9,10] 
 
     dpobj = DetectPaper(img_path,quenos)
     dpobj.rec_all_fill_cnts()
-    dpobj.rec_paper()
+    dpobj.rec_paper(True)
 

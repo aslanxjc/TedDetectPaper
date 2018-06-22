@@ -193,8 +193,8 @@ def get_ans_area_cnts(inverse_image_path="test_cut_(543, 2219, 1860, 2603)_inver
     """
     w =std_point.get("w")
     h =std_point.get("h")
-    w = 37
-    h = 48
+    #w = 37
+    #h = 48
     #闭操作清除杂质
     image = CloseImage(inverse_image_path)
     kh_std_line = image.rec_kh_std_line()

@@ -250,7 +250,7 @@ class RecAnsArea:
                         add_w = self.get_std_point()["w"]*1.5
                         add_h = self.get_std_point()["h"]
                         #cut_point = (x-add_w,y-add_h,x+w+add_w,y+h+add_h)
-                        cut_point = (x,y,x+w+add_w,y+h+add_h/2)
+                        cut_point = (x,y,x+w+add_w,y+h+add_h)
                     else:
                         cut_point = (x-60,y-50,x+w+60,y+h+50)
 
@@ -276,13 +276,13 @@ class RecAnsArea:
         print ans_area_path,6666666666666666666666666666666666666666666
         self.inverse_image_path = self.get_inverse_image(ans_area_path) 
         print self.inverse_image_path,77777777777777777777
-        return ans_area_path,org_cut_point,self.inverse_image_path
+        return ans_area_path,org_cut_point,self.inverse_image_path,self.get_std_point()
 
 
 
 def main():
     img_dect = RecAnsArea("test.jpg")
-    ans_area_path,org_cut_point,inverse_image_path = img_dect.get_ans_path()
+    ans_area_path,org_cut_point,inverse_image_path,std_point = img_dect.get_ans_path()
 
 
 if __name__ == "__main__":
